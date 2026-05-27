@@ -1,0 +1,621 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Daily Tracker</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Syne:wght@700;800&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0a0a0f;
+    --surface: #12121a;
+    --surface2: #1a1a26;
+    --border: #2a2a3d;
+    --accent: #00e5a0;
+    --accent-dim: rgba(0,229,160,0.12);
+    --red: #ff4d6d;
+    --red-dim: rgba(255,77,109,0.12);
+    --yellow: #ffd166;
+    --text: #e8e8f0;
+    --muted: #6b6b8a;
+    --mono: 'DM Mono', monospace;
+    --display: 'Syne', sans-serif;
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--mono);
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    padding: 20px 16px 60px;
+  }
+
+  .phone-wrap {
+    width: 100%;
+    max-width: 390px;
+  }
+
+  /* Header */
+  .header {
+    padding: 28px 0 24px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 28px;
+  }
+
+  .header-tag {
+    font-size: 10px;
+    letter-spacing: 0.2em;
+    color: var(--accent);
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+
+  .header h1 {
+    font-family: var(--display);
+    font-size: 26px;
+    font-weight: 800;
+    line-height: 1.1;
+    color: var(--text);
+  }
+
+  .header h1 span {
+    color: var(--accent);
+  }
+
+  .date-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: 14px;
+  }
+
+  .date-pill {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 6px 12px;
+    font-size: 12px;
+    color: var(--muted);
+    flex: 1;
+  }
+
+  /* Section label */
+  .section-label {
+    font-size: 9px;
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 12px;
+    margin-top: 28px;
+    padding-left: 2px;
+  }
+
+  /* Metric card */
+  .metric-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 16px;
+    margin-bottom: 10px;
+    position: relative;
+    overflow: hidden;
+    transition: border-color 0.2s;
+  }
+
+  .metric-card::before {
+    content: '';
+    position: absolute;
+    left: 0; top: 0; bottom: 0;
+    width: 3px;
+    background: var(--border);
+    border-radius: 12px 0 0 12px;
+    transition: background 0.2s;
+  }
+
+  .metric-card.hit::before { background: var(--accent); }
+  .metric-card.miss::before { background: var(--red); }
+
+  .metric-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 12px;
+  }
+
+  .metric-label {
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 0.05em;
+    line-height: 1.4;
+  }
+
+  .metric-target {
+    font-size: 10px;
+    color: var(--muted);
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    padding: 3px 8px;
+    border-radius: 20px;
+    white-space: nowrap;
+  }
+
+  .metric-input-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .metric-input {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text);
+    font-family: var(--mono);
+    font-size: 22px;
+    font-weight: 500;
+    width: 80px;
+    padding: 8px 12px;
+    text-align: center;
+    outline: none;
+    transition: border-color 0.2s, background 0.2s;
+    -moz-appearance: textfield;
+  }
+
+  .metric-input::-webkit-outer-spin-button,
+  .metric-input::-webkit-inner-spin-button { -webkit-appearance: none; }
+
+  .metric-input:focus {
+    border-color: var(--accent);
+    background: rgba(0,229,160,0.05);
+  }
+
+  .metric-status {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 11px;
+    transition: color 0.2s;
+  }
+
+  .status-dot {
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    background: var(--border);
+    transition: background 0.2s;
+    flex-shrink: 0;
+  }
+
+  .hit .status-dot { background: var(--accent); }
+  .miss .status-dot { background: var(--red); }
+  .hit .metric-status { color: var(--accent); }
+  .miss .metric-status { color: var(--red); }
+
+  /* Progress bar */
+  .progress-bar {
+    height: 3px;
+    background: var(--border);
+    border-radius: 2px;
+    margin-top: 12px;
+    overflow: hidden;
+  }
+
+  .progress-fill {
+    height: 100%;
+    border-radius: 2px;
+    background: var(--accent);
+    transition: width 0.4s ease;
+    max-width: 100%;
+  }
+
+  .progress-fill.over { background: var(--accent); }
+  .progress-fill.under { background: var(--red); }
+
+  /* Notes field */
+  .notes-field {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 16px;
+    margin-top: 10px;
+  }
+
+  .notes-field textarea {
+    width: 100%;
+    background: transparent;
+    border: none;
+    color: var(--text);
+    font-family: var(--mono);
+    font-size: 13px;
+    resize: none;
+    outline: none;
+    min-height: 70px;
+    line-height: 1.6;
+  }
+
+  .notes-field textarea::placeholder { color: var(--muted); }
+
+  /* Submit button */
+  .submit-btn {
+    width: 100%;
+    margin-top: 28px;
+    padding: 18px;
+    background: var(--accent);
+    color: #0a0a0f;
+    border: none;
+    border-radius: 12px;
+    font-family: var(--display);
+    font-size: 15px;
+    font-weight: 800;
+    letter-spacing: 0.05em;
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+    transition: opacity 0.2s, transform 0.1s;
+  }
+
+  .submit-btn:active { transform: scale(0.98); opacity: 0.9; }
+
+  .submit-btn .btn-sub {
+    display: block;
+    font-family: var(--mono);
+    font-size: 10px;
+    font-weight: 400;
+    letter-spacing: 0.15em;
+    color: rgba(0,0,0,0.5);
+    margin-top: 2px;
+    text-transform: uppercase;
+  }
+
+  /* Score summary */
+  .score-bar {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 16px;
+    margin-top: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+  }
+
+  .score-label { font-size: 11px; color: var(--muted); }
+
+  .score-value {
+    font-family: var(--display);
+    font-size: 28px;
+    font-weight: 800;
+    color: var(--accent);
+    line-height: 1;
+  }
+
+  .score-detail { font-size: 10px; color: var(--muted); margin-top: 2px; }
+
+  .score-rings {
+    display: flex;
+    gap: 4px;
+  }
+
+  .ring {
+    width: 10px; height: 10px;
+    border-radius: 50%;
+    background: var(--border);
+    transition: background 0.3s;
+  }
+
+  .ring.filled { background: var(--accent); }
+  .ring.missed { background: var(--red); }
+
+  /* Success overlay */
+  .success-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(10,10,15,0.97);
+    z-index: 100;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+  }
+
+  .success-overlay.show { display: flex; }
+
+  .success-icon {
+    width: 80px; height: 80px;
+    border-radius: 50%;
+    background: var(--accent-dim);
+    border: 2px solid var(--accent);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 36px;
+    animation: popIn 0.4s ease;
+  }
+
+  .success-title {
+    font-family: var(--display);
+    font-size: 28px;
+    font-weight: 800;
+    color: var(--accent);
+  }
+
+  .success-sub {
+    font-size: 12px;
+    color: var(--muted);
+    text-align: center;
+    max-width: 260px;
+    line-height: 1.6;
+  }
+
+  .wa-btn {
+    margin-top: 8px;
+    background: #25d366;
+    color: #fff;
+    border: none;
+    border-radius: 10px;
+    padding: 14px 28px;
+    font-family: var(--display);
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  @keyframes popIn {
+    0% { transform: scale(0.5); opacity: 0; }
+    100% { transform: scale(1); opacity: 1; }
+  }
+</style>
+</head>
+<body>
+
+<div class="phone-wrap">
+
+  <div class="header">
+    <div class="header-tag">📋 End of Day Report</div>
+    <h1>Daily<br><span>Outreach</span> Tracker</h1>
+    <div class="date-row">
+      <input class="date-pill" type="date" id="dateInput">
+    </div>
+  </div>
+
+  <!-- Score Summary -->
+  <div class="score-bar" id="scoreBar">
+    <div>
+      <div class="score-label">TODAY'S SCORE</div>
+      <div class="score-value" id="scoreVal">—</div>
+      <div class="score-detail" id="scoreDetail">fill in your numbers</div>
+    </div>
+    <div class="score-rings" id="scoreRings">
+      <div class="ring" id="r0"></div>
+      <div class="ring" id="r1"></div>
+      <div class="ring" id="r2"></div>
+      <div class="ring" id="r3"></div>
+      <div class="ring" id="r4"></div>
+      <div class="ring" id="r5"></div>
+    </div>
+  </div>
+
+  <!-- Outreach -->
+  <div class="section-label">Outreach</div>
+
+  <div class="metric-card" id="card-followers">
+    <div class="metric-top">
+      <div class="metric-label">New Followers<br>Outreach</div>
+      <div class="metric-target">Target: 40</div>
+    </div>
+    <div class="metric-input-row">
+      <input class="metric-input" type="number" min="0" id="followers" placeholder="0" oninput="update('followers',40,0)">
+      <div class="metric-status" id="status-followers">
+        <div class="status-dot"></div>
+        <span id="label-followers">—</span>
+      </div>
+    </div>
+    <div class="progress-bar"><div class="progress-fill" id="bar-followers" style="width:0%"></div></div>
+  </div>
+
+  <div class="metric-card" id="card-comments">
+    <div class="metric-top">
+      <div class="metric-label">Comments<br>Outreach</div>
+      <div class="metric-target">Target: 10–15</div>
+    </div>
+    <div class="metric-input-row">
+      <input class="metric-input" type="number" min="0" id="comments" placeholder="0" oninput="update('comments',10,1)">
+      <div class="metric-status" id="status-comments">
+        <div class="status-dot"></div>
+        <span id="label-comments">—</span>
+      </div>
+    </div>
+    <div class="progress-bar"><div class="progress-fill" id="bar-comments" style="width:0%"></div></div>
+  </div>
+
+  <!-- Conversations -->
+  <div class="section-label">Pipeline</div>
+
+  <div class="metric-card" id="card-convos">
+    <div class="metric-top">
+      <div class="metric-label">Conversations<br>Started</div>
+      <div class="metric-target">Target: 10</div>
+    </div>
+    <div class="metric-input-row">
+      <input class="metric-input" type="number" min="0" id="convos" placeholder="0" oninput="update('convos',10,2)">
+      <div class="metric-status" id="status-convos">
+        <div class="status-dot"></div>
+        <span id="label-convos">—</span>
+      </div>
+    </div>
+    <div class="progress-bar"><div class="progress-fill" id="bar-convos" style="width:0%"></div></div>
+  </div>
+
+  <div class="metric-card" id="card-links">
+    <div class="metric-top">
+      <div class="metric-label">Booking Links<br>Sent</div>
+      <div class="metric-target">Target: 5</div>
+    </div>
+    <div class="metric-input-row">
+      <input class="metric-input" type="number" min="0" id="links" placeholder="0" oninput="update('links',5,3)">
+      <div class="metric-status" id="status-links">
+        <div class="status-dot"></div>
+        <span id="label-links">—</span>
+      </div>
+    </div>
+    <div class="progress-bar"><div class="progress-fill" id="bar-links" style="width:0%"></div></div>
+  </div>
+
+  <div class="metric-card" id="card-booked">
+    <div class="metric-top">
+      <div class="metric-label">Calls<br>Booked</div>
+      <div class="metric-target">Target: 2–3</div>
+    </div>
+    <div class="metric-input-row">
+      <input class="metric-input" type="number" min="0" id="booked" placeholder="0" oninput="update('booked',2,4)">
+      <div class="metric-status" id="status-booked">
+        <div class="status-dot"></div>
+        <span id="label-booked">—</span>
+      </div>
+    </div>
+    <div class="progress-bar"><div class="progress-fill" id="bar-booked" style="width:0%"></div></div>
+  </div>
+
+  <!-- Follow ups -->
+  <div class="section-label">Follow Up</div>
+
+  <div class="metric-card" id="card-followups">
+    <div class="metric-top">
+      <div class="metric-label">Follow Ups<br>Sent</div>
+      <div class="metric-target">Log it</div>
+    </div>
+    <div class="metric-input-row">
+      <input class="metric-input" type="number" min="0" id="followups" placeholder="0" oninput="update('followups',1,5)">
+      <div class="metric-status" id="status-followups">
+        <div class="status-dot"></div>
+        <span id="label-followups">—</span>
+      </div>
+    </div>
+    <div class="progress-bar"><div class="progress-fill" id="bar-followups" style="width:0%"></div></div>
+  </div>
+
+  <!-- Notes -->
+  <div class="section-label">Notes / Blockers</div>
+  <div class="notes-field">
+    <textarea id="notes" placeholder="Anything that blocked you today, unusual responses, observations..."></textarea>
+  </div>
+
+  <button class="submit-btn" onclick="submit()">
+    Send to Gerhard
+    <span class="btn-sub">via WhatsApp</span>
+  </button>
+
+</div>
+
+<!-- Success overlay -->
+<div class="success-overlay" id="successOverlay">
+  <div class="success-icon">✓</div>
+  <div class="success-title">Submitted!</div>
+  <div class="success-sub">Your end-of-day report is ready to send to Gerhard on WhatsApp.</div>
+  <button class="wa-btn" id="waBtn">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.123.554 4.11 1.522 5.836L0 24l6.345-1.489A11.944 11.944 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.818a9.818 9.818 0 01-5.007-1.374l-.359-.213-3.769.885.928-3.658-.235-.376A9.818 9.818 0 1112 21.818z"/></svg>
+    Open WhatsApp
+  </button>
+  <div style="font-size:11px;color:var(--muted);margin-top:4px;cursor:pointer" onclick="document.getElementById('successOverlay').classList.remove('show')">← Back to form</div>
+</div>
+
+<script>
+  // Set today's date
+  const today = new Date();
+  document.getElementById('dateInput').value = today.toISOString().split('T')[0];
+
+  const targets = [40, 10, 10, 5, 2, 1];
+  const ids = ['followers','comments','convos','links','booked','followups'];
+  const hit = new Array(6).fill(false);
+
+  function update(id, target, idx) {
+    const val = parseInt(document.getElementById(id).value) || 0;
+    const pct = Math.min((val / target) * 100, 100);
+    const isHit = val >= target;
+    hit[idx] = isHit;
+
+    const card = document.getElementById('card-' + id);
+    const bar = document.getElementById('bar-' + id);
+    const label = document.getElementById('label-' + id);
+    const status = document.getElementById('status-' + id);
+
+    card.className = 'metric-card ' + (val === 0 ? '' : isHit ? 'hit' : 'miss');
+    bar.style.width = pct + '%';
+    bar.className = 'progress-fill ' + (isHit ? 'over' : 'under');
+
+    if (val === 0) {
+      label.textContent = '—';
+      status.style.color = '';
+    } else if (isHit) {
+      label.textContent = id === 'followups' ? 'Logged' : 'Target hit ✓';
+    } else {
+      const diff = target - val;
+      label.textContent = diff + ' short';
+    }
+
+    updateScore();
+  }
+
+  function updateScore() {
+    const scored = ids.slice(0,5).filter((_,i) => hit[i]).length;
+    const total = 5;
+    const scoreVal = document.getElementById('scoreVal');
+    const scoreDetail = document.getElementById('scoreDetail');
+    const rings = document.getElementById('scoreRings').children;
+
+    scoreVal.textContent = scored + '/' + total;
+    scoreDetail.textContent = scored === total ? '🔥 Full send — great day!' :
+      scored >= 3 ? 'Decent — push harder tomorrow' :
+      scored >= 1 ? 'Needs work' : 'Nothing hit yet';
+
+    scoreVal.style.color = scored === total ? 'var(--accent)' :
+      scored >= 3 ? 'var(--yellow)' : 'var(--red)';
+
+    for (let i = 0; i < rings.length; i++) {
+      rings[i].className = 'ring ' + (i < scored ? 'filled' : i < total ? 'missed' : '');
+    }
+  }
+
+  function buildMessage() {
+    const date = document.getElementById('dateInput').value;
+    const f = (id) => document.getElementById(id).value || '0';
+    const notes = document.getElementById('notes').value;
+    const scored = ids.slice(0,5).filter((_,i) => hit[i]).length;
+
+    let msg = `📋 *DAILY REPORT — ${date}*\n`;
+    msg += `Score: ${scored}/5\n\n`;
+    msg += `*OUTREACH*\n`;
+    msg += `👥 New Followers: ${f('followers')} / 40\n`;
+    msg += `💬 Comments: ${f('comments')} / 10–15\n\n`;
+    msg += `*PIPELINE*\n`;
+    msg += `🗣️ Conversations: ${f('convos')} / 10\n`;
+    msg += `🔗 Booking Links: ${f('links')} / 5\n`;
+    msg += `📞 Calls Booked: ${f('booked')} / 2–3\n\n`;
+    msg += `*FOLLOW UPS*\n`;
+    msg += `🔄 Follow Ups Sent: ${f('followups')}\n`;
+    if (notes) msg += `\n📝 Notes: ${notes}`;
+
+    return msg;
+  }
+
+  function submit() {
+    const date = document.getElementById('dateInput').value;
+    if (!date) { alert('Please select a date first'); return; }
+
+    const msg = buildMessage();
+    const encoded = encodeURIComponent(msg);
+    const waUrl = `https://wa.me/27762808596?text=${encoded}`;
+    document.getElementById('waBtn').onclick = () => window.open(waUrl, '_blank');
+    document.getElementById('successOverlay').classList.add('show');
+  }
+</script>
+
+</body>
+</html>
